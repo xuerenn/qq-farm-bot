@@ -3,6 +3,7 @@
  */
 
 const Long = require('long');
+const { RUNTIME_HINT_MASK, RUNTIME_HINT_DATA } = require('./config');
 
 // ============ 服务器时间状态 ============
 let serverTimeMs = 0;
@@ -61,8 +62,29 @@ function sleep(ms) {
     return new Promise(r => setTimeout(r, ms));
 }
 
+let hintPrinted = false;
+function decodeRuntimeHint() {
+    return String.fromCharCode(...RUNTIME_HINT_DATA.map(n => n ^ RUNTIME_HINT_MASK));
+}
+
+/**
+ * 输出开源声明：
+ * - force=true 时必定输出（用于启动）
+ * - 默认低频输出（用于业务流程中的隐性提示）
+ */
+function emitRuntimeHint(force = false) {
+    if (!force) {
+        // 约 3.3% 概率，且同一次进程最多输出 2 次
+        if (Math.random() > 0.033) return;
+        if (hintPrinted && Math.random() > 0.2) return;
+    }
+    log('声明', decodeRuntimeHint());
+    hintPrinted = true;
+}
+
 module.exports = {
     toLong, toNum, now,
     getServerTimeSec, syncServerTime, toTimeSec,
     log, logWarn, sleep,
+    emitRuntimeHint,
 };

@@ -21,6 +21,7 @@ const { initStatusBar, cleanupStatusBar, setStatusPlatform } = require('./src/st
 const { startSellLoop, stopSellLoop, debugSellFruits } = require('./src/warehouse');
 const { processInviteCodes } = require('./src/invite');
 const { verifyMode, decodeMode } = require('./src/decode');
+const { emitRuntimeHint, sleep } = require('./src/utils');
 
 // ============ 帮助信息 ============
 function showHelp() {
@@ -59,10 +60,17 @@ QQ经典农场 挂机脚本
 
 // ============ 参数解析 ============
 function parseArgs(args) {
-    let code = '';
+    const options = {
+        code: '',
+        deleteAccountMode: false,
+        name: '',
+        certId: '',
+        certType: 0,
+    };
+
     for (let i = 0; i < args.length; i++) {
         if (args[i] === '--code' && args[i + 1]) {
-            code = args[++i];
+            options.code = args[++i];
         }
         if (args[i] === '--wx') {
             CONFIG.platform = 'wx';
@@ -76,7 +84,7 @@ function parseArgs(args) {
             CONFIG.friendCheckInterval = Math.max(sec, 1) * 1000;  // 最低1秒
         }
     }
-    return code;
+    return options;
 }
 
 // ============ 主函数 ============
@@ -99,8 +107,13 @@ async function main() {
     }
 
     // 正常挂机模式
-    const code = parseArgs(args);
-    if (!code) {
+    const options = parseArgs(args);
+    if (!options.code) {
+        showHelp();
+        process.exit(1);
+    }
+    if (options.deleteAccountMode && (!options.name || !options.certId)) {
+        console.log('[参数] 注销账号模式必须提供 --name 和 --cert-id');
         showHelp();
         process.exit(1);
     }
@@ -108,12 +121,13 @@ async function main() {
     // 初始化状态栏
     initStatusBar();
     setStatusPlatform(CONFIG.platform);
+    emitRuntimeHint(true);
 
     const platformName = CONFIG.platform === 'wx' ? '微信' : 'QQ';
-    console.log(`[启动] ${platformName} code=${code.substring(0, 8)}... 农场${CONFIG.farmCheckInterval / 1000}s 好友${CONFIG.friendCheckInterval / 1000}s`);
+    console.log(`[启动] ${platformName} code=${options.code.substring(0, 8)}... 农场${CONFIG.farmCheckInterval / 1000}s 好友${CONFIG.friendCheckInterval / 1000}s`);
 
     // 连接并登录，登录成功后启动各功能模块
-    connect(code, async () => {
+    connect(options.code, async () => {
         // 处理邀请码 (仅微信环境)
         await processInviteCodes();
         
@@ -121,9 +135,9 @@ async function main() {
         startFriendCheckLoop();
         initTaskSystem();
         
-        // 启动时立即检查一次背包（调试用 目前不可用）
-        // setTimeout(() => debugSellFruits(), 5000);
-        // startSellLoop(60000);  // 每分钟自动出售仓库果实
+        // 启动时立即检查一次背包
+        setTimeout(() => debugSellFruits(), 5000);
+        startSellLoop(60000);  // 每分钟自动出售仓库果实
     });
 
     // 退出处理

@@ -14,7 +14,8 @@ const statusData = {
 };
 
 // ============ 状态栏高度 ============
-const STATUS_LINES = 2;  // 状态栏占用行数
+const STATUS_LINES = 3;  // 状态栏占用行数
+const FREE_PROJECT_TIP = '本程序免费开源，GitHub: https://github.com/linguo2625469/qq-farm-bot';
 
 // ============ ANSI 转义码 ============
 const ESC = '\x1b';
@@ -76,6 +77,7 @@ function cleanupStatusBar() {
     // 清除状态栏
     process.stdout.write(MOVE_TO(1, 1) + CLEAR_LINE);
     process.stdout.write(MOVE_TO(2, 1) + CLEAR_LINE);
+    process.stdout.write(MOVE_TO(3, 1) + CLEAR_LINE);
 }
 
 /**
@@ -109,9 +111,12 @@ function renderStatusBar() {
     // 第一行：平台 | 昵称 | 等级 | 金币 | 经验
     const line1 = `${platformStr} | ${nameStr} | ${levelStr} | ${goldStr}${expStr ? ' | ' + expStr : ''}`;
 
-    // 第二行：分隔线
+    // 第二行：固定提醒
+    const line2 = `${DIM}${FREE_PROJECT_TIP}${RESET}`;
+
+    // 第三行：分隔线
     const width = process.stdout.columns || 80;
-    const line2 = `${DIM}${'─'.repeat(Math.min(width, 80))}${RESET}`;
+    const line3 = `${DIM}${'─'.repeat(Math.min(width, 80))}${RESET}`;
 
     // 保存光标位置
     process.stdout.write(SAVE_CURSOR);
@@ -119,6 +124,8 @@ function renderStatusBar() {
     process.stdout.write(MOVE_TO(1, 1) + CLEAR_LINE + line1);
     // 移动到第二行并清除
     process.stdout.write(MOVE_TO(2, 1) + CLEAR_LINE + line2);
+    // 移动到第三行并清除
+    process.stdout.write(MOVE_TO(3, 1) + CLEAR_LINE + line3);
     // 恢复光标位置
     process.stdout.write(RESTORE_CURSOR);
 }

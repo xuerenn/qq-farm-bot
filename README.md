@@ -1,3 +1,5 @@
+# 紧急通知：已经有人反馈封号了 低调使用，被举报必封
+## 一些提醒：某些人嘴脸不要那么难看，直接拿我原版的程序去倒卖
 # QQ经典农场 挂机脚本
 
 基于 Node.js 的 QQ/微信 经典农场小程序自动化挂机脚本。通过分析小程序 WebSocket 通信协议（Protocol Buffers），实现全自动农场管理。
@@ -13,7 +15,7 @@
 - **自动除草** — 检测并清除杂草
 - **自动除虫** — 检测并消灭害虫
 - **自动浇水** — 检测缺水作物并浇水
-- ~~**自动出售** — 每分钟自动出售仓库中的果实（暂时不行）~~
+- **自动出售** — 每分钟自动出售仓库中的果实
 
 ### 好友农场
 - **好友巡查** — 自动巡查好友农场
@@ -29,8 +31,8 @@
 - **心跳保活** — 自动维持 WebSocket 连接
 
 ### 开发工具
-- **PB 解码工具** — 内置 Protobuf 数据解码器，方便调试分析
-- **经验分析工具** — 分析作物经验效率，计算最优种植策略
+- **[PB 解码工具](#pb-解码工具)** — 内置 Protobuf 数据解码器，方便调试分析
+- **[经验分析工具](#经验分析工具)** — 分析作物经验效率，计算最优种植策略
 
 ## 安装
 
@@ -39,12 +41,6 @@ git clone https://github.com/linguo2625469/qq-farm-bot.git
 cd qq-farm-bot
 npm install
 ```
-
-### 依赖
-
-- [ws](https://www.npmjs.com/package/ws) — WebSocket 客户端
-- [protobufjs](https://www.npmjs.com/package/protobufjs) — Protocol Buffers 编解码
-- [long](https://www.npmjs.com/package/long) — 64 位整数支持
 
 ## 使用
 
@@ -77,6 +73,9 @@ node client.js --code <code> --interval 5 --friend-interval 2
 | `--wx` | 使用微信登录 | QQ 小程序 |
 | `--interval` | 自己农场巡查间隔（秒） | 2 |
 | `--friend-interval` | 好友巡查间隔（秒） | 1 |
+| `--name` | 注销实名姓名（配合 `--delete-account`） | — |
+| `--cert-id` | 注销证件号（配合 `--delete-account`） | — |
+| `--cert-type` | 证件类型: `0/414/516/553/555` 或 `china/passport/hk/other` | `0` |
 | `--verify` | 验证 proto 定义是否正确 | — |
 | `--decode` | 进入 PB 数据解码模式 | — |
 
@@ -108,14 +107,24 @@ node client.js --decode
 
 ### 经验分析工具
 
-分析作物经验效率，帮助选择最优种植策略：
+ * 规则：
+ * 1) 每次收获经验 = exp，铲地固定 +1 经验 => 单轮经验 = exp + 1
+ * 2) 种植速度：
+ *    - 不施肥：2 秒种 18 块地 => 9 块/秒
+ *    - 普通肥：2 秒种 12 块地 => 6 块/秒
+ * 3) 普通肥：减少 20% 生长时间；若 20% < 30 秒，则固定减少 30 秒
+ */
 
 ```bash
-# 分析24小时内最大经验（需要先配置可购买种子范围）
-node tools/analyze-exp-24h-lv24.js
+node tools/calc-exp-yield.js
+node tools/calc-exp-yield.js --lands 18 --level 27
+node tools/calc-exp-yield.js --input tools/seed-shop-merged-export.json
 ```
 
 ## 项目结构
+
+<details>
+<summary>点击展开项目结构</summary>
 
 ```
 ├── client.js              # 入口文件 - 参数解析与启动调度
@@ -151,7 +160,12 @@ node tools/analyze-exp-24h-lv24.js
 └── package.json
 ```
 
+</details>
+
 ## 运行示例
+
+<details>
+<summary>点击展开运行示例</summary>
 
 ```
 QQ | 我的农场 | Lv24 125/500 | 金币:88888
@@ -178,6 +192,8 @@ QQ | 我的农场 | Lv24 125/500 | 金币:88888
 [16:05:31] [申请] 已同意 1 人: 小绿
 ```
 
+</details>
+
 ## 配置说明
 
 ### src/config.js
@@ -185,7 +201,7 @@ QQ | 我的农场 | Lv24 125/500 | 金币:88888
 ```javascript
 const CONFIG = {
     serverUrl: 'wss://gate-obt.nqf.qq.com/prod/ws',
-    clientVersion: '1.6.0.5_20251224',
+    clientVersion: '1.6.0.11_20251224',
     platform: 'qq',              // 平台: qq 或 wx
     heartbeatInterval: 25000,    // 心跳间隔 25秒
     farmCheckInterval: 2000,     // 农场巡查间隔 2秒
@@ -205,7 +221,8 @@ const ENABLE_PUT_BAD_THINGS = false;  // 是否启用放虫放草功能
 1. **登录 Code 有效期有限**，过期后需要重新抓取
 2. **请合理设置巡查间隔**，过于频繁可能触发服务器限流
 3. **微信环境**才支持邀请码和好友申请功能
-4. **QQ环境**下服务器不推送土地状态变化，依靠定时巡查
+4. **QQ环境**下code支持多次使用
+5. **WX环境**下code不支持多次使用，请抓包时将code拦截掉
 
 ## 免责声明
 
