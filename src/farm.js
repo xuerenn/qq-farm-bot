@@ -211,12 +211,11 @@ async function findBestSeed() {
         return null;
     }
     
-    //商店中每行有4个种子，
-    //同行种子的单位时间经验值相同
-    //取最后一行第一个种子最为最佳种子
-    let rowNum = Math.ceil(available.length / 4); 
-    let bestSeedIndex = (rowNum - 1) * 4
-    return available[bestSeedIndex];
+    // 按等级要求排序
+    // 取最高等级种子: available.sort((a, b) => b.requiredLevel - a.requiredLevel);
+    // 暂时改为取最低等级种子 (白萝卜)
+    available.sort((a, b) => a.requiredLevel - b.requiredLevel);
+    return available[0];
 }
 
 async function autoPlantEmptyLands(deadLandIds, emptyLandIds) {
