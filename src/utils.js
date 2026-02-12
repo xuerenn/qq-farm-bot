@@ -21,7 +21,12 @@ function toNum(val) {
 
 // ============ 时间相关 ============
 function now() {
-    return new Date().toLocaleTimeString();
+    return new Date().toLocaleTimeString('zh-CN', {
+    hour12: false,        // 24小时制
+    hour: '2-digit',      // 两位小时
+    minute: '2-digit',    // 两位分钟
+    second: '2-digit'     // 两位秒
+});
 }
 
 /** 获取当前推算的服务器时间(秒) */
