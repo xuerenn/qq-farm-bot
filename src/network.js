@@ -194,6 +194,9 @@ function handleNotify(msg) {
                     const count = toNum(item.count);
                     
                     if (id === 1101 || id === 2) {
+                        if (userState.exp !== count) {
+                            log('推送', `经验: ${userState.exp} -> ${count}`);
+                        }
                         userState.exp = count;
                         updateStatusLevel(userState.level, count);
                     } else if (id === 1 || id === 1001) {
