@@ -136,8 +136,8 @@ async function main() {
         initTaskSystem();
         
         // 启动时立即检查一次背包
-        setTimeout(() => debugSellFruits(), 5000);
-        startSellLoop(60000);  // 每分钟自动出售仓库果实
+        // setTimeout(() => debugSellFruits(), 5000);
+        // startSellLoop(60000);  // 每分钟自动出售仓库果实
     });
 
     // 退出处理
