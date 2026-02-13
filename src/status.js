@@ -45,7 +45,7 @@ function initStatusBar() {
     if (!process.stdout.isTTY) {
         return false;
     }
-
+    console.clear();
     termRows = process.stdout.rows || 24;
     statusEnabled = true;
 

@@ -565,6 +565,10 @@ async function checkFriends() {
  */
 async function friendCheckLoop() {
     while (friendLoopRunning) {
+        if (!CONFIG.friendCheck) {
+            await sleep(500); // 禁用时低频轮询
+            continue;
+        }
         await checkFriends();
         if (!friendLoopRunning) break;
         await sleep(CONFIG.friendCheckInterval);

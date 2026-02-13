@@ -8,6 +8,7 @@ const { CONFIG } = require('./config');
 const { types } = require('./proto');
 const { toLong, toNum, syncServerTime, log, logWarn } = require('./utils');
 const { updateStatusFromLogin, updateStatusGold, updateStatusLevel } = require('./status');
+const { logStreamWrite } = require('./interactive');
 
 // ============ 事件发射器 (用于推送通知) ============
 const networkEvents = new EventEmitter();
@@ -359,11 +360,20 @@ function sendLogin(onLoginSuccess) {
                 console.log(`  昵称:   ${userState.name}`);
                 console.log(`  等级:   ${userState.level}`);
                 console.log(`  金币:   ${userState.gold}`);
+
+                logStreamWrite('========== 登录成功 ==========\n')
+                logStreamWrite(`  GID:    ${userState.gid}\n`);
+                logStreamWrite(`  昵称:   ${userState.name}\n`);
+                logStreamWrite(`  等级:   ${userState.level}\n`);
+                logStreamWrite(`  金币:   ${userState.gold}\n`);
+                logStreamWrite(`  经验:   ${userState.exp}\n`);
                 if (reply.time_now_millis) {
                     syncServerTime(toNum(reply.time_now_millis));
                     console.log(`  时间:   ${new Date(toNum(reply.time_now_millis)).toLocaleString()}`);
+                    logStreamWrite(`  时间:   ${new Date(toNum(reply.time_now_millis)).toLocaleString()}\n`);
                 }
                 console.log('===============================');
+                logStreamWrite('===============================\n');
                 console.log('');
             }
 
@@ -424,7 +434,7 @@ function connect(code, onLoginSuccess) {
 
     ws = new WebSocket(url, {
         headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090a13)',
+            'User-Agent': 'Mozilla/5.0+(Linux;+Android+13;+M2012K11AC+Build/TKQ1.221114.001;+wv)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Version/4.0+Chrome/143.0.7499.192+Mobile+Safari/537.36 QQ/9.2.60.33425 V1_AND_SQ_9.2.60_13010_YYB_D QQ/MiniApp',
             'Origin': 'https://gate-obt.nqf.qq.com',
         },
     });

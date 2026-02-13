@@ -4,6 +4,8 @@
 
 const Long = require('long');
 const { RUNTIME_HINT_MASK, RUNTIME_HINT_DATA } = require('./config');
+const { startInteractive, safeLog } = require('./interactive');
+
 
 // ============ 服务器时间状态 ============
 let serverTimeMs = 0;
@@ -55,11 +57,11 @@ function toTimeSec(val) {
 
 // ============ 日志 ============
 function log(tag, msg) {
-    console.log(`[${now()}] [${tag}] ${msg}`);
+    safeLog(`[${now()}] [${tag}] ${msg}`);
 }
 
 function logWarn(tag, msg) {
-    console.log(`[${now()}] [${tag}] ⚠ ${msg}`);
+    safeLog(`[${now()}] [${tag}] ⚠ ${msg}`);
 }
 
 // ============ 异步工具 ============
@@ -87,9 +89,22 @@ function emitRuntimeHint(force = false) {
     hintPrinted = true;
 }
 
+/**
+ * 将字符串解析为布尔值
+ * @param {string} val 用户输入的参数
+ * @returns {boolean|undefined} 解析成功返回布尔值，否则返回 undefined
+ */
+function parseBoolean(val) {
+    const str = val.toLowerCase();
+    if (['on', 'true', '1', 'yes', 'y'].includes(str)) return true;
+    if (['off', 'false', '0', 'no', 'n'].includes(str)) return false;
+    return undefined;
+}
+
 module.exports = {
     toLong, toNum, now,
     getServerTimeSec, syncServerTime, toTimeSec,
     log, logWarn, sleep,
     emitRuntimeHint,
+    parseBoolean
 };

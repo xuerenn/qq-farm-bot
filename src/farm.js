@@ -165,6 +165,52 @@ async function plantSeeds(seedId, landIds) {
     }
     return successCount;
 }
+async function getAvailableSeed() {
+    const SEED_SHOP_ID = 2;
+    const shopReply = await getShopInfo(SEED_SHOP_ID);
+    if (!shopReply.goods_list || shopReply.goods_list.length === 0) {
+        logWarn('商店', '种子商店无商品');
+        return null;
+    }
+
+    const state = getUserState();
+    const available = [];
+    for (const goods of shopReply.goods_list) {
+        if (!goods.unlocked) continue;
+
+        let meetsConditions = true;
+        let requiredLevel = 0;
+        const conds = goods.conds || [];
+        for (const cond of conds) {
+            if (toNum(cond.type) === 1) {
+                requiredLevel = toNum(cond.param);
+                if (state.level < requiredLevel) {
+                    meetsConditions = false;
+                    break;
+                }
+            }
+        }
+        if (!meetsConditions) continue;
+
+        const limitCount = toNum(goods.limit_count);
+        const boughtNum = toNum(goods.bought_num);
+        if (limitCount > 0 && boughtNum >= limitCount) continue;
+
+        available.push({
+            goods,
+            goodsId: toNum(goods.id),
+            seedId: toNum(goods.item_id),
+            price: toNum(goods.price),
+            requiredLevel,
+        });
+    }
+
+    if (available.length === 0) {
+        logWarn('商店', '没有可购买的种子');
+        return null;
+    }
+    return available;
+}
 
 async function findBestSeed() {
     const SEED_SHOP_ID = 2;
@@ -211,11 +257,12 @@ async function findBestSeed() {
         return null;
     }
     
-    // 按等级要求排序
-    // 取最高等级种子: available.sort((a, b) => b.requiredLevel - a.requiredLevel);
-    // 暂时改为取最低等级种子 (白萝卜)
-    available.sort((a, b) => a.requiredLevel - b.requiredLevel);
-    return available[0];
+    //商店中每行有4个种子，
+    //同行种子的单位时间经验值相同
+    //取最后一行第一个种子最为最佳种子
+    let rowNum = Math.ceil(available.length / 4); 
+    let bestSeedIndex = (rowNum - 1) * 4
+    return available[bestSeedIndex];
 }
 
 async function autoPlantEmptyLands(deadLandIds, emptyLandIds) {
@@ -239,18 +286,42 @@ async function autoPlantEmptyLands(deadLandIds, emptyLandIds) {
 
     // 2. 查询种子商店
     let bestSeed;
-    try {
-        bestSeed = await findBestSeed();
-    } catch (e) {
-        logWarn('商店', `查询失败: ${e.message}`);
-        return;
+    if(CONFIG.farmSeedId){
+        const available = await getAvailableSeed()
+        for (const a of available) {
+            if(a['seedId'] === CONFIG.farmSeedId){
+                log('商店', `玩家可种植指定作物${CONFIG.farmSeedId}`);
+                bestSeed = a;
+            }
+        }
+        if (!bestSeed)
+            log('商店', `玩家不可种植指定作物${CONFIG.farmSeedId}，或者ID输入有误，请重新指定`);
+        
     }
+    else
+    {
+        try {
+            bestSeed = await findBestSeed();
+        } catch (e) {
+            logWarn('商店', `查询失败: ${e.message}`);
+            return;
+        }
+    }
+    
     if (!bestSeed) return;
 
     const seedName = getPlantNameBySeedId(bestSeed.seedId);
     const growTime = getPlantGrowTime(1020000 + (bestSeed.seedId - 20000));  // 转换为植物ID
     const growTimeStr = growTime > 0 ? ` 生长${formatGrowTime(growTime)}` : '';
-    log('商店', `最佳种子: ${seedName} (${bestSeed.seedId}) 价格=${bestSeed.price}金币${growTimeStr}`);
+    if(CONFIG.farmSeedId)
+    {
+        log('商店', `指定种子: ${seedName} (${bestSeed.seedId}) 价格=${bestSeed.price}金币${growTimeStr}`);
+    }
+    else
+    {
+        log('商店', `最佳种子: ${seedName} (${bestSeed.seedId}) 价格=${bestSeed.price}金币${growTimeStr}`);
+    }
+    
 
     // 3. 购买
     const needCount = landsToPlant.length;

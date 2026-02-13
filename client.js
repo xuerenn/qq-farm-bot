@@ -21,7 +21,8 @@ const { initStatusBar, cleanupStatusBar, setStatusPlatform } = require('./src/st
 const { startSellLoop, stopSellLoop, debugSellFruits } = require('./src/warehouse');
 const { processInviteCodes } = require('./src/invite');
 const { verifyMode, decodeMode } = require('./src/decode');
-const { emitRuntimeHint, sleep } = require('./src/utils');
+const { emitRuntimeHint, sleep, parseBoolean } = require('./src/utils');
+const { startInteractive, safeLog } = require('./src/interactive');
 
 // ============ 帮助信息 ============
 function showHelp() {
@@ -74,6 +75,9 @@ function parseArgs(args) {
         }
         if (args[i] === '--wx') {
             CONFIG.platform = 'wx';
+        }
+        if (args[i] === '--seed-id' && args[i + 1]) {
+            CONFIG.farmSeedId = parseInt(args[++i]);
         }
         if (args[i] === '--interval' && args[i + 1]) {
             const sec = parseInt(args[++i]);
@@ -133,11 +137,125 @@ async function main() {
         
         startFarmCheckLoop();
         startFriendCheckLoop();
-        initTaskSystem();
+
+        if(CONFIG.autoClaimEnabled)
+            initTaskSystem();
         
         // 启动时立即检查一次背包
         // setTimeout(() => debugSellFruits(), 5000);
         // startSellLoop(60000);  // 每分钟自动出售仓库果实
+        startInteractive((cmd) => {
+            const parts = cmd.trim().split(/\s+/);
+            const name = parts[0]?.toLowerCase();
+            const arg = parts[1]; // 第二个参数，可能为空
+
+            // ---------- 1. 种子ID ----------
+            if (name === 'seed') {
+                if (!arg) {
+                    safeLog(`[CONFIG] 当前 farmSeedId = ${CONFIG.farmSeedId}`);
+                    return;
+                }
+                const id = parseInt(arg);
+                if (isNaN(id) || id <= 0) {
+                    safeLog('[错误] seed <id> 必须是正整数');
+                    return;
+                }
+                CONFIG.farmSeedId = id;
+                safeLog(`[CONFIG] 已更新 farmSeedId = ${id}`);
+                return;
+            }
+
+            // ---------- 2. 好友巡查开关 ----------
+            if (name === 'friend' || name === 'friendcheck') {
+                if (!arg) {
+                    safeLog(`[CONFIG] 好友巡查开关: ${CONFIG.friendCheck ? '开启' : '关闭'}`);
+                    return;
+                }
+                const enabled = parseBoolean(arg);
+                if (enabled === undefined) {
+                    safeLog('[错误] friend 参数应为 on/off, true/false, 1/0');
+                    return;
+                }
+                CONFIG.friendCheck = enabled;
+                safeLog(`[CONFIG] 好友巡查已${enabled ? '开启' : '关闭'}`);
+                return;
+            }
+
+            // ---------- 3. 自动领取任务开关 ----------
+            // if (name === 'auto' || name === 'claim' || name === 'autoclaim') {
+            //     if (!arg) {
+            //         safeLog(`[CONFIG] 自动领取任务开关: ${CONFIG.autoClaimEnabled ? '开启' : '关闭'}`);
+            //         return;
+            //     }
+            //     const enabled = parseBoolean(arg);
+            //     if (enabled === undefined) {
+            //         safeLog('[错误] auto 参数应为 on/off, true/false, 1/0');
+            //         return;
+            //     }
+            //     CONFIG.autoClaimEnabled = enabled;
+            //     safeLog(`[CONFIG] 自动领取任务已${enabled ? '开启' : '关闭'}`);
+            //     return;
+            // }
+
+            // ---------- 4. 自己农场巡查间隔 ----------
+            if (name === 'interval') {
+                if (!arg) {
+                    safeLog(`[CONFIG] 当前 farmCheckInterval = ${CONFIG.farmCheckInterval} ms`);
+                    return;
+                }
+                const val = parseInt(arg);
+                if (isNaN(val) || val < 1000) {
+                    safeLog('[错误] interval 必须为 ≥1000 的整数（毫秒）');
+                    return;
+                }
+                CONFIG.farmCheckInterval = val;
+                safeLog(`[CONFIG] 已更新 farmCheckInterval = ${val} ms`);
+                return;
+            }
+
+            // ---------- 5. 好友农场巡查间隔 ----------
+            if (name === 'finterval' || name === 'friendinterval') {
+                if (!arg) {
+                    safeLog(`[CONFIG] 当前 friendCheckInterval = ${CONFIG.friendCheckInterval} ms`);
+                    return;
+                }
+                const val = parseInt(arg);
+                if (isNaN(val) || val < 1000) {
+                    safeLog('[错误] finterval 必须为 ≥1000 的整数（毫秒）');
+                    return;
+                }
+                CONFIG.friendCheckInterval = val;
+                safeLog(`[CONFIG] 已更新 friendCheckInterval = ${val} ms`);
+                return;
+            }
+            // ---------- 7. 显示全部配置 ----------
+            if (name === 'config' || name === 'show') {
+                safeLog('========== 当前配置 ==========');
+                safeLog(`服务器: ${CONFIG.serverUrl}`);
+                safeLog(`客户端版本: ${CONFIG.clientVersion}`);
+                safeLog(`平台: ${CONFIG.platform}`);
+                safeLog(`操作系统: ${CONFIG.os}`);
+                safeLog(`心跳间隔: ${CONFIG.heartbeatInterval} ms`);
+                safeLog(`自己农场巡查间隔: ${CONFIG.farmCheckInterval} ms`);
+                safeLog(`好友巡查间隔: ${CONFIG.friendCheckInterval} ms`);
+                safeLog(`种子 ID: ${CONFIG.farmSeedId ?? '未设置'}`);
+                safeLog(`自动领取任务: ${CONFIG.autoClaimEnabled ? '开启' : '关闭'}`);
+                safeLog(`好友巡查: ${CONFIG.friendCheck ? '开启' : '关闭'}`);
+                safeLog('==============================');
+                return;
+            }
+
+            // ---------- 8. 退出 ----------
+            if (name === 'exit' || name === 'quit') {
+                safeLog('[交互] 正在退出...');
+                process.kill(process.pid, 'SIGINT');
+                return;
+            }
+
+            // ---------- 未知命令 ----------
+            safeLog(`[未知命令] ${cmd}`);
+        });
+
     });
 
     // 退出处理
