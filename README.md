@@ -48,9 +48,15 @@ npm install
 
 你需要从小程序中抓取 code。可以通过抓包工具（如 Fiddler、Charles、mitmproxy 等）获取 WebSocket 连接 URL 中的 `code` 参数。
 
+现已支持qq端扫码登录获取code后自动登录，wx不会支持，不需要再提问（wx无此类漏洞）
+[lkeme/QRLib](https://github.com/lkeme/QRLib) - 扫码登录使用此项目代码，非常感谢。
+
 ### 启动挂机
 
 ```bash
+# QQ小程序 (无任何参数默认qq平台且使用二维码登录)
+node client.js --code
+
 # QQ小程序 (默认)
 node client.js --code <你的登录code>
 
