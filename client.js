@@ -86,6 +86,9 @@ function parseArgs(args) {
         if (args[i] === '--seed-id' && args[i + 1]) {
             CONFIG.farmSeedId = parseInt(args[++i]);
         }
+         if (args[i] === '--auto-sell' && args[i + 1]) {
+            CONFIG.autoSellEnabled = parseBoolean(args[++i]);
+        }
         if (args[i] === '--interval' && args[i + 1]) {
             const sec = parseInt(args[++i]);
             CONFIG.farmCheckInterval = Math.max(sec, 1) * 1000;
@@ -168,7 +171,10 @@ async function main() {
         
         // 启动时立即检查一次背包
         // setTimeout(() => debugSellFruits(), 5000);
-        // startSellLoop(60000);  // 每分钟自动出售仓库果实
+        if (CONFIG.autoSellEnabled)
+        {
+            startSellLoop(60000);  // 每分钟自动出售仓库果实
+        }
         startInteractive((cmd) => {
             const parts = cmd.trim().split(/\s+/);
             const name = parts[0]?.toLowerCase();

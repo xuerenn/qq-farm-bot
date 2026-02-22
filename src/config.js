@@ -13,6 +13,7 @@ const CONFIG = {
     farmSeedId: null, //指定种子ID，默认商店内可购买种子最后一行第一个
     autoClaimEnabled: false, //是否自动领取任务
     friendCheck: false, //是否巡查好友
+    autoSellEnabled: false, //是否自动出售果实
     device_info: {
         client_version: "1.6.0.14_20251224",
         sys_software: 'Android 13',
