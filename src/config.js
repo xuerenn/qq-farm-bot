@@ -15,7 +15,7 @@ const CONFIG = {
     friendCheck: false, //是否巡查好友
     autoSellEnabled: false, //是否自动出售果实
     device_info: {
-        client_version: "1.6.0.14_20251224",
+        client_version: "1.6.1.16_20251224",
         sys_software: 'Android 13',
         network: 'wifi',
         cpu: 'qcom',
